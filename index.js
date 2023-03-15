@@ -1,8 +1,10 @@
-import express, { Express } from 'express'
+import express from 'express'
 import dotenv from 'dotenv'
 import cors from 'cors'
 
-import connectDB from './config/db'
+import { UserRouter } from './routes/index.js'
+
+import connectDB from './config/db.js'
 
 dotenv.config()
 
@@ -16,8 +18,6 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-app.use('/', (req, res) => {
-  res.send('Hello from net-tree backend')
-})
+app.use('/api/user/', UserRouter)
 
 app.listen(PORT, () => console.log(`Server is running on a port ${PORT}`))
