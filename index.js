@@ -18,6 +18,6 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-app.use('/api/user/', UserRouter)
+app.use('/api/user', UserRouter)
 
 app.listen(PORT, () => console.log(`Server is running on a port ${PORT}`))
