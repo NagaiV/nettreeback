@@ -3,6 +3,7 @@ import dotenv from 'dotenv'
 import cors from 'cors'
 
 import { UserRouter } from './routes/index.js'
+import { DataFormRouter } from './routes/index.js'
 
 import connectDB from './config/db.js'
 
@@ -19,5 +20,6 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 app.use('/api/user', UserRouter)
+app.use('/form', DataFormRouter)
 
 app.listen(PORT, () => console.log(`Server is running on a port ${PORT}`))

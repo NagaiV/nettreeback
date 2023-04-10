@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <title>Net Tree</title>
+  </head>
+  <body style="text-align: center">
+    <p style="font-weight: bold">
+      Network Name:
+      <input
+        type="text"
+        id="NetworkName"
+        placeholder="Network"
+        onchange="handleNetworkName()"
+      />
+    </p>
+    <p>nprops for Network</p>
+    <button onClick="AddNetwork2('e-1')">Add netprops</button>
+    <!-- AddNetwork2('e-1') e-1 is id of network parent node -->
+    <p id="network"></p>
+
+    <p>Node:</p>
+    <p id="node"></p>
+    <button onClick="AddParentNode()">Add Node Key/Value Pair</button>
+
+    <p>Link:</p>
+    <button onClick="AddLink2()">Add Link Key/Value Pair</button>
+    <p id="link"></p>
+
+    <div style="align-items: flex-start">
+      <p>Network:</p>
+      <pre id="genNet"></pre>
+    </div>
+    <button onclick="saveNetwork()">Save</button>
+    <h3>Recent Networks</h3>
+    <div id="saved"></div>
+
+    <div id="selected"></div>
+  </body>
+  <script>
+    const genericLink = {
+      name: '',
+      leftNode: '',
+      rightnode: '',
+      lprops: [
+        {
+          name: '',
+          label: '',
+        },
+      ],
+    }
+    const genericNode = {
+      name: '',
+      nprops: [],
+    }
+
+    let savedNetworks = []
+
+    let Network = {
+      network: {
+        name: '',
+        netprops: [],
+        nodes: [],
+        links: [],
+      },
+    }
+
+    async function handleSubmitNetwork() {
+      const response = await fetch('http://localhost:', {
+        method: 'POST',
+        body: Network, // string or object
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      const myJson = await response.json()
+    }
+
+    var network = document.getElementById('network')
+    var node = document.getElementById('node')
+    var link = document.getElementById('link')
+
+    const showNodeInHtml = () => {
+      networkElem = document.getElementById('genNet')
+      networkElem.innerHTML = JSON.stringify(Network, undefined, 6)
+    }
+
+    var hanldeAddLinkName
+    var hanldeAddLinkLeftNode
+    var hanldeAddLinkRightNode
+    var handleAddNodeName
+    var handleAddLinkLabel
+    var handleNetworkPName
+    var handleNetworkPValue
+    var handleNetworkPKey
+    var handleAddElement
+    var handleNodePKey
+    var handleNodePValue
+
+    const handleNetworkName = (e) => {
+      val = document.getElementById('NetworkName').value
+      Network.network.name = val
+      showNodeInHtml()
+    }
+    function AddNetwork2(parentId) {
+      const propsIndex = parentId.split('-')[1] - 1
+      const parentElement = document.getElementById(parentId)
+      parentElement.style.maxHeight = '245px'
+      parentElement.style.margin = '1em 35%'
+      parentElement.style.overflowY = 'scroll'
+      let networkChildCount = parentElement.childNodes.length
+      var form = document.createElement('form')
+
+      const networKeyId = `nk-${networkChildCount}`
+      const networValueId = `nv-${networkChildCount}`
+
+      handleNetworkPKey = () => {
+        const elNId = NetworkValue.id.split('-')[1]
+        let val = undefined
+        if (Network.network.netprops[elNId]) {
+          val = Object.values(Network.network.netprops[elNId])[0]
+        }
+
+        const data = { [NetworkKey.value]: val ? val : '' }
+        Network.network.netprops[elNId] = data
+        showNodeInHtml()
+      }
+
+      handleNetworkPValue = () => {
+        const elNId = NetworkValue.id.split('-')[1]
+        let key = ''
+        if (Network.network.netprops[elNId]) {
+          key = Object.keys(Network.network.netprops[elNId])[0]
+        }
+
+        const data = { [key]: NetworkValue.value }
+        Network.network.netprops[elNId] = data
+        showNodeInHtml()
+      }
+
+      var NetworkKey = document.createElement('input')
+      NetworkKey.setAttribute('type', 'text')
+      NetworkKey.setAttribute('id', networKeyId)
+      NetworkKey.setAttribute('name', 'networkKey')
+      NetworkKey.setAttribute('placeholder', 'Property Name')
+      NetworkKey.onchange = handleNetworkPKey
+
+      var NetworkValue = document.createElement('input')
+      NetworkValue.setAttribute('type', 'text')
+      NetworkValue.setAttribute('name', 'networkValue')
+      NetworkValue.setAttribute('id', networValueId)
+      NetworkValue.setAttribute('placeholder', 'Property Value')
+      NetworkValue.onchange = handleNetworkPValue
+
+      const transhIcon = document.createElement('i')
+      transhIcon.setAttribute('class', 'fa fa-trash-o')
+      transhIcon.style.fontSize = '15px'
+
+      var NetworkRemoveButton = document.createElement('button')
+      NetworkRemoveButton.setAttribute('type', 'button')
+      NetworkRemoveButton.append(transhIcon)
+      NetworkRemoveButton.onclick = () => RemoveElem(parentId, networKeyId)
+
+      form.append(NetworkKey)
+
+      form.append(NetworkValue)
+      form.append(NetworkRemoveButton)
+
+      parentElement.appendChild(form)
+      showNodeInHtml()
+    }
+
+    function RemoveElem(parentId, networKeyId) {
+      const elementIndex = networKeyId.split('-')[1] - 1
+      delete Network.network.netprops[elementIndex]
+      Network.network.netprops = Network.network.netprops.filter(
+        (np) => np != null
+      )
+      const child = document.getElementById(networKeyId)
+      child.parentElement.remove()
+      showNodeInHtml()
+    }
+    function handleAddNpropsNetwork() {
+      Network.network.netprops = [...Network.network.netprops, {}]
+      const elementLength = Network.network.netprops.length
+      const elementSectionId = `e-${elementLength}`
+
+      const myNet = document.getElementById('network')
+
+      const elementSection = document.createElement('p')
+      elementSection.setAttribute('id', elementSectionId)
+
+      myNet.appendChild(elementSection)
+
+      AddNetwork2(elementSectionId)
+      showNodeInHtml()
+    }
+    handleAddNpropsNetwork()
+    function AddNetwork2(parentId) {
+      const propsIndex = parentId.split('-')[1] - 1
+      const parentElement = document.getElementById(parentId)
+      parentElement.style.maxHeight = '245px'
+      parentElement.style.margin = '1em 35%'
+      parentElement.style.overflowY = 'scroll'
+      let networkChildCount = parentElement.childNodes.length
+      var form = document.createElement('form')
+
+      const networKeyId = `nk-${networkChildCount}`
+      const networValueId = `nv-${networkChildCount}`
+
+      handleNetworkPKey = () => {
+        const elNId = NetworkValue.id.split('-')[1]
+        let val = undefined
+        if (Network.network.netprops[elNId]) {
+          val = Object.values(Network.network.netprops[elNId])[0]
+        }
+
+        const data = { [NetworkKey.value]: val ? val : '' }
+        Network.network.netprops[elNId] = data
+        showNodeInHtml()
+      }
+
+      handleNetworkPValue = () => {
+        const elNId = NetworkValue.id.split('-')[1]
+        let key = ''
+        if (Network.network.netprops[elNId]) {
+          key = Object.keys(Network.network.netprops[elNId])[0]
+        }
+
+        const data = { [key]: NetworkValue.value }
+        Network.network.netprops[elNId] = data
+        showNodeInHtml()
+      }
+
+      var NetworkKey = document.createElement('input')
+      NetworkKey.setAttribute('type', 'text')
+      NetworkKey.setAttribute('id', networKeyId)
+      NetworkKey.setAttribute('name', 'networkKey')
+      NetworkKey.setAttribute('placeholder', 'Property Name')
+      NetworkKey.onchange = handleNetworkPKey
+
+      var NetworkValue = document.createElement('input')
+      NetworkValue.setAttribute('type', 'text')
+      NetworkValue.setAttribute('name', 'networkValue')
+      NetworkValue.setAttribute('id', networValueId)
+      NetworkValue.setAttribute('placeholder', 'Property Value')
+      NetworkValue.onchange = handleNetworkPValue
+
+      const transhIcon = document.createElement('i')
+      transhIcon.setAttribute('class', 'fa fa-trash-o')
+      transhIcon.style.fontSize = '15px'
+
+      var NetworkRemoveButton = document.createElement('button')
+      NetworkRemoveButton.setAttribute('type', 'button')
+      NetworkRemoveButton.append(transhIcon)
+      NetworkRemoveButton.onclick = () => RemoveElem(parentId, networKeyId)
+
+      form.append(NetworkKey)
+
+      form.append(NetworkValue)
+      form.append(NetworkRemoveButton)
+
+      parentElement.appendChild(form)
+      showNodeInHtml()
+    }
+
+    function RemoveElem(parentId, networKeyId) {
+      const elementIndex = networKeyId.split('-')[1] - 1
+      delete Network.network.netprops[elementIndex]
+      Network.network.netprops = Network.network.netprops.filter(
+        (np) => np != null
+      )
+      const child = document.getElementById(networKeyId)
+      child.parentElement.remove()
+      showNodeInHtml()
+    }
+    function handleAddNpropsNetwork() {
+      Network.network.netprops = [...Network.network.netprops, {}]
+      const elementLength = Network.network.netprops.length
+      const elementSectionId = `e-${elementLength}`
+
+      const myNet = document.getElementById('network')
+
+      const elementSection = document.createElement('p')
+      elementSection.setAttribute('id', elementSectionId)
+
+      myNet.appendChild(elementSection)
+
+      AddNetwork2(elementSectionId)
+      showNodeInHtml()
+    }
+    handleAddNpropsNetwork()
+    function AddLink2() {
+      let linkChildCount = link.childNodes.length
+      var form = document.createElement('form')
+      const linkParentId = `lp-${linkChildCount}`
+
+      const LinkParent = document.createElement('p')
+      LinkParent.setAttribute('id', linkParentId)
+      link.appendChild(LinkParent)
+
+      AddLinkData(linkParentId)
+    }
+
+    function AddLinkData(linkParentId) {
+      const linkParentIndex = linkParentId.split('-')[1]
+      const linkParentElem = document.getElementById(linkParentId)
+
+      let dymmyGenericLink = JSON.stringify(genericLink)
+      dymmyGenericLink = JSON.parse(dymmyGenericLink)
+
+      const linkChildCount = linkParentElem.childNodes.length
+
+      const linkNameId = `ln-${linkChildCount}-${linkParentIndex}` //ln-elementIndex-linkIndex
+      const linkLeftNodeId = `lfn-${linkChildCount}-${linkParentIndex}`
+      const linkRightNodeId = `lrn-${linkChildCount}-${linkParentIndex}`
+      const linkChildNpropsParentId = `p-${linkNameId}`
+
+      Network.network.links = [
+        ...Network.network.links,
+        { ...dymmyGenericLink },
+      ]
+
+      handleAddLinkName = (linkNameId) => {
+        const linkName = document.getElementById(linkNameId).value
+        const lId = linkNameId.split('-')[2]
+        Network.network.links[lId].name = linkName
+        showNodeInHtml()
+      }
+
+      handleAddLinkLeftNode = (linkLeftNodeId) => {
+        const linkLeftNode = document.getElementById(linkLeftNodeId).value
+        const lId = linkLeftNodeId.split('-')[2]
+        Network.network.links[lId].leftNode = linkLeftNode
+        showNodeInHtml()
+      }
+
+      handleAddLinkRightNode = (linkRightNodeId) => {
+        const linkRightNode = document.getElementById(linkRightNodeId).value
+        const lId = linkRightNodeId.split('-')[2]
+        Network.network.links[lId].rightnode = linkRightNode
+        showNodeInHtml()
+      }
+
+      var form = document.createElement('form')
+      const labelName = document.createElement('label')
+      labelName.textContent = 'Name:'
+
+      var LinkName = document.createElement('input')
+      LinkName.setAttribute('type', 'text')
+      LinkName.setAttribute('name', 'linkName')
+      LinkName.setAttribute('id', linkNameId)
+      LinkName.setAttribute('placeholder', 'Link name')
+      LinkName.onchange = () => handleAddLinkName(linkNameId)
+
+      const labelLeftNode = document.createElement('label')
+      labelLeftNode.textContent = 'Left Node:'
+      labelLeftNode.style.marginLeft = '10px'
+
+      var LinkLeftNode = document.createElement('input')
+      LinkLeftNode.setAttribute('type', 'text')
+      LinkLeftNode.setAttribute('name', 'left node')
+      LinkLeftNode.setAttribute('id', linkLeftNodeId)
+      LinkLeftNode.setAttribute('placeholder', 'link left node')
+      LinkLeftNode.onchange = () => handleAddLinkLeftNode(linkLeftNodeId)
+
+      const labelRightNode = document.createElement('label')
+      labelRightNode.textContent = 'Right Node:'
+      labelRightNode.style.marginLeft = '10px'
+
+      var LinkRightNode = document.createElement('input')
+      LinkRightNode.setAttribute('type', 'text')
+      LinkRightNode.setAttribute('name', 'right node')
+      LinkRightNode.setAttribute('id', linkRightNodeId)
+      LinkRightNode.setAttribute('placeholder', 'link right node')
+      LinkRightNode.onchange = () => handleAddLinkRightNode(linkRightNodeId)
+
+      const AddLprops = document.createElement('button')
+      AddLprops.setAttribute('type', 'button')
+      AddLprops.innerHTML = 'Add lprops'
+      AddLprops.style.marginLeft = '10px'
+
+      AddLprops.onclick = () => AddLinkLprops(linkChildNpropsParentId)
+
+      const linkElementSection = document.createElement('p')
+      linkElementSection.innerHTML = `Properties`
+
+      labelName.appendChild(LinkName)
+      labelLeftNode.appendChild(LinkLeftNode)
+      labelRightNode.appendChild(LinkRightNode)
+
+      form.append(labelName)
+      form.append(labelLeftNode)
+      form.append(labelRightNode)
+      form.append(AddLprops)
+
+      const linkChild = document.createElement('p')
+      linkChild.style.maxHeight = '245px'
+      linkChild.style.margin = '1em 35%'
+      linkChild.style.overflowY = 'scroll'
+      linkChild.setAttribute('id', linkChildNpropsParentId)
+      linkChild.appendChild(linkElementSection)
+      linkParentElem.appendChild(form)
+      linkParentElem.appendChild(linkChild)
+
+      AddLinkLprops(linkChildNpropsParentId)
+    }
+
+    function AddLinkLprops(linkParentId) {
+      const LinkIndex = linkParentId.split('-')[3]
+      var parentElement = document.getElementById(linkParentId)
+      var form = document.createElement('form')
+
+      const linkNameChildCount = parentElement.childNodes.length
+      const elemtRefID = linkParentId.split('-')[2]
+      const linkRefID = linkParentId.split('-')[3]
+      const LinkPropertyKeyId = `lpk-${LinkIndex}-${linkNameChildCount}-${elemtRefID}-${linkRefID}` // lpk stand for node property key
+      const LinkPropetyValueId = `lpv-${LinkIndex}-${linkNameChildCount}-${elemtRefID}-${linkRefID}` // lpv stand for node property value
+
+      function handleLinkPKey(pId, LinkPropertyKeyId) {
+        const parentId = pId.split('-')[3]
+        const childId = pId.split('-')[2]
+        const lpropIndex = LinkPropertyKeyId.split('-')[2] - 1
+
+        const keyVal = document.getElementById(LinkPropertyKeyId).value
+        const valVal = Network.network.links[parentId].lprops[lpropIndex]
+          ? Object.values(Network.network.links[parentId].lprops[lpropIndex])[0]
+          : ''
+
+        let data = {
+          [keyVal]: valVal,
+        }
+
+        Network.network.links[parentId].lprops[lpropIndex] = data
+        showNodeInHtml()
+      }
+
+      function handleLinkPValue(pId, LinkPropetyValueId) {
+        const childIndex = parseInt(LinkPropetyValueId.split('-')[2]) - 1
+        const parentId = pId.split('-')[3]
+        const childId = pId.split('-')[2]
+
+        const valueVal = document.getElementById(LinkPropetyValueId).value
+
+        const keyVall = Object.keys(
+          Network.network.links[parentId].lprops[childIndex]
+        )[0]
+
+        let data
+
+        if (keyVall) {
+          data = { [keyVall]: valueVal }
+        } else {
+          data = {
+            '': valueVal,
+          }
+        }
+
+        Network.network.links[parentId].lprops[childIndex] = data
+        showNodeInHtml()
+      }
+
+      var LinkPropertyKey = document.createElement('input')
+      LinkPropertyKey.setAttribute('type', 'text')
+      LinkPropertyKey.setAttribute('id', LinkPropertyKeyId)
+      LinkPropertyKey.setAttribute('name', 'linkKey')
+      LinkPropertyKey.setAttribute('placeholder', 'Property Name')
+      LinkPropertyKey.onchange = () =>
+        handleLinkPKey(linkParentId, LinkPropertyKeyId)
+
+      var LinkPropetyValue = document.createElement('input')
+      LinkPropetyValue.setAttribute('type', 'text')
+      LinkPropetyValue.setAttribute('name', 'linkValue')
+      LinkPropetyValue.setAttribute('id', LinkPropetyValueId)
+      LinkPropetyValue.setAttribute('placeholder', 'Property Value')
+      LinkPropetyValue.onchange = () =>
+        handleLinkPValue(linkParentId, LinkPropetyValueId)
+
+      const transhIcon = document.createElement('i')
+      transhIcon.setAttribute('class', 'fa fa-trash-o')
+      transhIcon.style.fontSize = '15px'
+
+      var RemoveLinkLprop = document.createElement('button')
+      RemoveLinkLprop.setAttribute('type', 'button')
+      RemoveLinkLprop.append(transhIcon)
+      RemoveLinkLprop.onclick = () =>
+        removeLprops(linkParentId, LinkPropertyKeyId)
+
+      form.append(LinkPropertyKey)
+      form.append(LinkPropetyValue)
+      form.append(RemoveLinkLprop)
+
+      parentElement.append(form)
+      showNodeInHtml()
+    }
+
+    function removeLprops(parentId, elemtId) {
+      const parentIndex = elemtId.split('-')[1]
+      const elementIndex = elemtId.split('-')[2] - 1
+
+      delete Network.network.links[parentIndex].lprops[elementIndex]
+
+      Network.network.links[parentIndex].lprops = Network.network.links[
+        parentIndex
+      ].lprops.filter((lp) => lp != null)
+
+      const child = document.getElementById(elemtId)
+      child.parentElement.remove()
+      showNodeInHtml()
+    }
+
+    function handleElementClick(data) {
+      console.log('handleElementClick', data)
+
+      const selectedNetwork = document.getElementById('selected')
+
+      const networkPara = document.createElement('pre')
+      networkPara.innerHTML = ''
+      networkPara.innerHTML = JSON.stringify(data)
+      selectedNetwork.append(networkPara)
+    }
+
+    function getSavedNetworks() {
+      try {
+        var apiUrl = 'http://localhost:4000/form/allNetworks/'
+
+        fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            // 'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        })
+          .then((response) => {
+            return response.json()
+          })
+          .then((data) => {
+            // Work with JSON data here
+            console.log('nworkldjaslkd ', data)
+
+            const orderedList = document.createElement('ul')
+            orderedList.style.listStyleType = 'none'
+
+            data.data.forEach((element, i) => {
+              let li = document.createElement('li')
+              li.innerText = i + 1 + '. ' + element.network.name
+              li.style.cursor = 'pointer'
+              li.onclick = () => handleElementClick(element)
+              orderedList.appendChild(li)
+            })
+
+            const mainDiv = document.getElementById('saved')
+            mainDiv.append(orderedList)
+            console.log('mainDiv', mainDiv)
+          })
+          .catch((err) => {
+            // Do something for an error here
+          })
+      } catch (error) {
+        console.log('errorerrorerror', error)
+        alert('error')
+      }
+    }
+    window.onload = () => {
+      getSavedNetworks()
+    }
+  </script>
+  <!-- <script src="/networkHandler.js"></script> -->
+  <!-- <script src="/netpropsHandler.js"></script> -->
+  <!-- <script src="/npropsHandler.js"></script> -->
+  <!-- <script src="/lpropsHandler.js"></script> -->
+
+  <script>
+    const saveNetwork = () => {
+      console.log('saveNetwork', Network)
+      var apiUrl = 'http://localhost:4000/form/saveNetwork/'
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // 'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: JSON.stringify(Network),
+      })
+        .then((response) => {
+          return response.json()
+        })
+        .then((data) => {
+          // Work with JSON data here
+          console.log(data)
+        })
+        .catch((err) => {
+          // Do something for an error here
+        })
+    }
+  </script>
+</html>
